@@ -1,12 +1,346 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<title>Starter</title>
-        <link rel="stylesheet" href="./style.css">
-	</head>
-	<body>
-        <canvas class="threejs"></canvas>
-        <script type="module" src="./script.js"></script>
-	</body>
-</html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batman 3D Story</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #000000;
+            color: #f0f0f0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+        }
+
+        .story-sections {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: 100vh;
+            scroll-behavior: smooth;
+            background: rgba(0, 0, 0, 0.8);
+            /* Move scrollbar to the left */
+            direction: rtl;
+        }
+
+        .story-sections > * {
+            /* Reset direction for content */
+            direction: ltr;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2rem;
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        }
+
+        .section.active {
+            opacity: 1;
+        }
+
+        /* Glow effect for active section titles */
+        .section.active h2 {
+            color: #ffcc00;
+            text-shadow: 
+                0 0 10px #ffcc00,
+                0 0 20px #ffcc00,
+                0 0 30px #ffcc00;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 
+                    0 0 10px #ffcc00,
+                    0 0 20px #ffcc00,
+                    0 0 30px #ffcc00;
+            }
+            to {
+                text-shadow: 
+                    0 0 15px #ffcc00,
+                    0 0 25px #ffcc00,
+                    0 0 35px #ffcc00;
+            }
+        }
+
+        .section h2 {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+
+        .section p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-bottom: 1.5rem;
+            color: #f0f0f0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #ffcc00;
+            color: #000000;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            border: 2px solid #ffcc00;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: #000000;
+            color: #ffcc00;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.4);
+        }
+
+        /* Batman Cube Container */
+        .batman-cube-container {
+            margin: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #batman-cube-canvas {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        }
+
+        .transform-button {
+            margin-top: 1.5rem;
+            background: #000000;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 0.6rem 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .transform-button:hover {
+            background: #ffcc00;
+            color: #000000;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.4);
+        }
+
+        .scene-container {
+            flex: 1;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        }
+
+        #batman-scene {
+            width: 100%;
+            height: 100%;
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffcc00;
+            font-size: 1.2rem;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .scroll-indicator .arrow {
+            display: block;
+            margin-top: 0.5rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Bat-Signal Styles with proper Batman Logo */
+        #bat-signal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: #222;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            opacity: 0.7;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+
+        /* Batman logo using CSS */
+        .batman-logo {
+            position: relative;
+            width: 50px;
+            height: 50px;
+        }
+
+        .batman-logo::before,
+        .batman-logo::after {
+            content: "";
+            position: absolute;
+            background: #ffcc00;
+        }
+
+        /* Main bat body */
+        .batman-logo::before {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            top: 10px;
+            left: 10px;
+        }
+
+        /* Bat wings */
+        .batman-logo::after {
+            width: 50px;
+            height: 20px;
+            clip-path: polygon(0 50%, 20% 0, 80% 0, 100% 50%, 80% 100%, 20% 100%);
+            top: 15px;
+            left: 0;
+        }
+
+        #bat-signal.glow {
+            opacity: 1;
+            box-shadow: 0 0 30px #ffcc00, 0 0 60px #ffcc00, 0 0 90px #ffcc00;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 30px #ffcc00, 0 0 60px #ffcc00, 0 0 90px #ffcc00;
+            }
+            50% {
+                box-shadow: 0 0 40px #ffcc00, 0 0 80px #ffcc00, 0 0 120px #ffcc00;
+            }
+            100% {
+                box-shadow: 0 0 30px #ffcc00, 0 0 60px #ffcc00, 0 0 90px #ffcc00;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .story-sections {
+                max-height: 50vh;
+            }
+            
+            .scene-container {
+                height: 50vh;
+            }
+            
+            .section h2 {
+                font-size: 2rem;
+            }
+            
+            #bat-signal {
+                width: 60px;
+                height: 60px;
+                top: 10px;
+                right: 10px;
+            }
+            
+            #batman-cube-canvas {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="story-sections">
+            <div class="section active" id="section1">
+                <h2>Who We Are</h2>
+                <p>We are the protectors of Gotham, operating from the shadows to ensure justice prevails. Our mission is to strike fear into the hearts of criminals while giving hope to the innocent.</p>
+                <p>Founded by Bruce Wayne, we operate beyond the constraints of conventional law enforcement, using advanced technology and strategic intellect to combat crime at its source.</p>
+                
+                <!-- Batman Cube -->
+                <div class="batman-cube-container">
+                    <div id="batman-cube-canvas"></div>
+                    <button class="transform-button" id="transform-button">Reveal Batman</button>
+                </div>
+            </div>
+            <div class="section" id="section2">
+                <h2>What We Do</h2>
+                <p>We patrol the dark streets of Gotham, responding to criminal activities with precision and efficiency. Our methods are unconventional but effective.</p>
+                <p>From high-tech surveillance to direct intervention, we maintain constant vigilance over the city, ready to deploy at a moment's notice to any threat that emerges.</p>
+            </div>
+            <div class="section" id="section3">
+                <h2>Our Services</h2>
+                <p>24/7 crime monitoring and response, criminal investigation, threat neutralization, and emergency assistance for Gotham citizens.</p>
+                <p>We provide specialized equipment and tactical support to law enforcement when needed, and maintain the Bat-Signal as a direct line for emergencies requiring our unique capabilities.</p>
+            </div>
+            <div class="section" id="section4">
+                <h2>Join The Mission</h2>
+                <p>Gotham needs more than a symbol. It needs citizens willing to stand against corruption and crime. You can help make a difference.</p>
+                <p>Report suspicious activities, support community initiatives, and stand up for justice in your own neighborhood. Together, we can reclaim the night.</p>
+                <a href="#" class="cta-button" id="signal-button">Signal For Help</a>
+            </div>
+        </div>
+        <div class="scene-container">
+            <div id="batman-scene"></div>
+            <!-- Bat-Signal element with Batman logo -->
+            <div id="bat-signal">
+                <div class="batman-logo"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scroll-indicator">
+        Scroll to navigate
+        <span class="arrow">↓</span>
+    </div>
+
+    <!-- Import our script -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
